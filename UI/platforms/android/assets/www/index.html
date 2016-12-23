@@ -1,0 +1,279 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+    <script src="components/loader.js"></script>
+    <script src="lib/onsenui/js/onsenui.min.js"></script>
+    <script
+    src="https://code.jquery.com/jquery-3.1.1.min.js"
+    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+    crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="components/loader.css">
+    <link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+    <link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+    <!-- CSS PERSONNNALISE -->
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+    <ons-navigator id="myNavigator" page="landing.html"></ons-navigator>
+
+    <ons-template id="landing.html">
+        <ons-toolbar><div class="center">Etape 1</div></ons-toolbar>
+        <ons-page id="landing">
+            <ons-list>
+                <ons-list-header style="margin-top: 3%;font-size: 1.2em;">Selectionnez la gamme de votre voiture</ons-list-header>
+                <ons-list-item tappable><div class="center" id="gamme_select">Economique</div><div class="right"><ons-icon icon="chevron-right" class="list__item__icon"></ons-icon></div></ons-list-item>
+
+            </ons-list>
+            <section style="padding: 8px">
+            <div class="right">
+                <ons-button id="fin_choix_gamme">Etape Suivante</ons-button>
+            </div>
+            </section>
+        </ons-page>
+    </ons-template>
+
+    <!--<ons-template id="choix_gamme.html"></ons-template>-->
+    <!--<ons-template id="choix_presta.html"></ons-template>-->
+    <!--<ons-template id="presta_menu.html"></ons-template>-->
+    <!--<ons-template id="presta_liste.html"></ons-template>-->
+    <!--<ons-template id="piece_liste.html"></ons-template>-->
+    <!--<ons-template id="resultats.html"></ons-template>-->
+    <ons-template id="map.html">
+        <ons-toolbar><div class="center">localiser les resultats</div></ons-toolbar>
+        <ons-page id="map">
+        </ons-page>
+    </ons-template>
+
+
+    <script>
+
+    $(function(){
+        //Echappe les caracteres speciaux d'une chaine de caracteres
+        function addslashes( str ) {
+            return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+        }
+
+        //Compare deux objets selon leurs prix
+        function compare(a,b) {
+          if (a.prix < b.prix)
+            return -1;
+          if (a.prix > b.prix)
+            return 1;
+          return 0;
+        }
+
+        //Execute une requete ajax sur le serveur Django
+        function doRequest(target,method,data,success){
+            $.ajax({
+                url : target,
+                type : method,
+                data : data,
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'text',
+                success : success,
+
+                error : function(xhr,errmsg,err) {
+                    $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>");
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        };
+
+        var params = {"lat":null,"long":null,"gamme":null,"reparations":[]};
+
+        ons.ready(function() {
+            console.log("Onsen UI is ready!");
+
+            //Recuperation de la position courante
+            navigator.geolocation.getCurrentPosition(function(position){
+                params["lat"]= position.coords.latitude;
+                params["long"]= position.coords.longitude;
+            });
+
+            myNavigator = document.querySelector("#myNavigator");
+
+            document.getElementById("gamme_select").addEventListener("click",function(){
+               myNavigator.pushPage('choix_gamme.html',{animation:"slide"}).then(function(){
+                   var divs = document.querySelectorAll(".gamme_options"),i;
+                   console.log(divs);
+                   for (i = 0; i < divs.length; ++i) {
+                      divs[i].addEventListener("click",function(e){
+                          myNavigator.popPage();
+                          document.getElementById("gamme_select").innerHTML = e.target.innerHTML;
+                      });
+                    }
+               });
+            });
+
+            document.getElementById("fin_choix_gamme").addEventListener("click",function(){
+                params["gamme"]=document.getElementById("gamme_select").innerHTML
+               myNavigator.pushPage('choix_presta.html',{animation:"slide"}).then(function(){
+                   console.log(params);
+                   params["reparations"]=[];
+                   document.getElementById("ajout_presta").addEventListener("click",function(){
+                       myNavigator.pushPage('presta_menu.html',{animation:"slide"}).then(function(){
+                           document.getElementById("piece_select").addEventListener("click",function(){
+                               myNavigator.pushPage('piece_liste.html',{animation:"slide"}).then(function(){
+                                   var divs = document.querySelectorAll(".piece_options"),i;
+                                   console.log(divs);
+                                   for (i = 0; i < divs.length; ++i) {
+                                      divs[i].addEventListener("click",function(e){
+                                          myNavigator.popPage();
+                                          document.getElementById("piece_select").innerHTML = e.target.innerHTML;
+                                      });
+                                    }
+                               });
+                           });
+
+                           document.getElementById("presta_select").addEventListener("click",function(){
+                               myNavigator.pushPage('presta_liste.html',{animation:"slide"}).then(function(){
+                                   var divs = document.querySelectorAll(".presta_options"),i;
+                                   console.log(divs);
+                                   for (i = 0; i < divs.length; ++i) {
+                                      divs[i].addEventListener("click",function(e){
+                                          myNavigator.popPage();
+                                          document.getElementById("presta_select").innerHTML = e.target.innerHTML;
+                                      });
+                                    }
+                               });
+                           });
+
+                           document.getElementById("fin_choix_piece").addEventListener("click",function(){
+                               params["reparations"].push({"prestation":document.getElementById("presta_select").innerHTML,"piece":document.getElementById("piece_select").innerHTML});
+                               myNavigator.popPage();
+                                document.getElementById("liste_presta").innerHTML = '<ons-list-header style="margin-top: 3%;font-size: 1.2em;">Choix des prestations</ons-list-header>';
+                                params["reparations"].forEach(function(value,i){
+                                    ind = i+1;
+                                    document.getElementById("liste_presta").innerHTML = document.getElementById("liste_presta").innerHTML + '<div class="card"><h1>Prestation '+ind+'</h1><div class="content"><span>Type</span>: '+ value["prestation"] +' <br><span>Piece</span>: '+value["piece"]+'</div></div>';
+                                });
+
+                           });
+                       });
+                   });
+                document.getElementById("fin_choix_presta").addEventListener("click",function(){
+
+                    console.log(params["reparations"]);
+                    if(params["reparations"].length === 0){
+                        ons.notification.alert('Vous devez choisir au moins une prestation.',{"title":"Erreur"});
+                    }
+                    else{
+                        message = JSON.stringify(params);
+                        message = addslashes(message);
+                        console.log(message);
+                        doRequest("http://192.168.0.12:8000/finder/homeApi/","POST","\""+message+"\"",function(json){
+                            //$('#results').html(JSON.stringify(json));
+                            liste_prix = JSON.parse(json);
+                            liste_prix.sort(compare);
+                            console.log(liste_prix);
+                            myNavigator.pushPage('resultats.html').then(function(){
+                                liste_prix.forEach(function(value,i){
+                                    document.getElementById("liste_results").innerHTML = document.getElementById("liste_results").innerHTML +
+                                    '<div class="card result"><h1>'+value["nom"]["value"]+'</h1><div class="content"><span>Adresse</span>: '+
+                                    value["adresse"]["value"] +
+                                    ' <br><span>Localite</span>: '+
+                                    value["codepostal"]["value"]+', '+value["localite"]["value"]+
+                                    ' <br><span>Tel</span>: 08888888888'+
+                                    ' <br><span>Prix des prestations</span>: '+
+                                    value["prix"].toFixed(2)+' €'+
+                                    '</div></div>';
+                                });
+
+                                document.getElementById("display_map").addEventListener("click",function(){
+                                    myNavigator.pushPage('map.html').then(function(){
+                                        $.getScript("https://maps.googleapis.com/maps/api/js?key=AIzaSyAXVO0dGcwggyWLx3qsk_P1iJDgD7ln9Qk&region=FR&language=fr",function(){
+                                            console.log(params["long"]);
+                                            map = new google.maps.Map(document.getElementById('map'), {
+                                                center: {lat:params["lat"],lng:params["long"]},
+                                                zoom: 12
+                                            });
+
+                                            home = {url:'home.png',scaledSize: new google.maps.Size(411*0.10, 512*0.10)}
+                                            gar = {url:'repair.png',scaledSize: new google.maps.Size(256*0.20, 256*0.20)}
+
+                                            var contentString = '<div id="content">'+
+                                              '<div id="siteNotice">'+
+                                              '</div>'+
+                                              '<h1 id="firstHeading" class="firstHeading">Vous êtes ici</h1>'+
+                                              '<div id="bodyContent">'+
+                                              '</div>'+
+                                              '</div>';
+
+                                              var infohome = new google.maps.InfoWindow({
+                                                content: contentString
+                                              });
+
+
+                                            var marker = new google.maps.Marker({
+                                                position: {lat: params["lat"], lng: params["long"]},
+                                                map: map,
+                                                animation: google.maps.Animation.DROP,
+                                                title: "Vous êtes ici",
+                                                icon:home
+                                            });
+
+                                            marker.addListener('click', function() {
+                                                infohome.open(map, marker);
+                                            });
+
+                                            liste_prix.forEach(function(value,i){
+
+                                                window.setTimeout(function() {
+                                                  var mark = new google.maps.Marker({
+                                                    position: {lat:parseFloat(value["lat"]["value"]),lng:parseFloat(value["long"]["value"])},
+                                                    map: map,
+                                                    animation: google.maps.Animation.DROP,
+                                                    icon:gar
+                                                  });
+
+                                                  var contentString = '<div id="content">'+
+                                                    '<div id="siteNotice">'+
+                                                    '</div>'+
+                                                    '<h1 id="firstHeading" class="firstHeading" style="font-size:1.3em">'+value["nom"]["value"]+'</h1>'+
+                                                    '<div id="bodyContent">'+
+                                                    value["adresse"]["value"]+", "+value["codepostal"]["value"]+'<br>'+
+                                                    value["localite"]["value"]+'<br>'+
+                                                    "Prix: "+value["prix"].toFixed(2)+" €"+
+                                                    '</div>'+
+                                                    '</div>';
+
+                                                    var infogar = new google.maps.InfoWindow({
+                                                      content: contentString
+                                                    });
+
+                                                    mark.addListener('click', function() {
+                                                        infogar.open(map, mark);
+                                                    });
+
+                                                  //markers.push();
+                                              }, i*200);
+                                            });
+
+
+                                            liste_prix.forEach(function(value,i){
+
+                                            });
+                                            console.log("done");
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    }
+                });
+
+               });
+            });
+
+
+
+        });
+    });
+    </script>
+</body>
+</html>
